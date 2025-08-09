@@ -11,7 +11,7 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   int _index = 0;
-  final _pages = const [SearchPage()];
+  final _pages = const [SearchPage(), ];
 
   @override
   Widget build(BuildContext context) {
@@ -26,6 +26,7 @@ class _HomePageState extends State<HomePage> {
         ],
         onDestinationSelected: (i) => setState(() => _index = i),
       ),
+
     );
   }
 }

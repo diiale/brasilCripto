@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 
 import '../../core/errors/app_failure.dart';
 import '../../domain/entities/coin.dart';
+import '../../domain/entities/coin_detail.dart';
 import '../../utils/result.dart';
 import '../datasources/coingecko_api.dart';
 
@@ -31,5 +32,16 @@ class CryptoRepository {
     }
   }
 
+  Future<Result<CoinDetail>> getCoinDetail(String id, {String vsCurrency = 'usd'}) async {
+    try {
+      final (details, chart) = await api.fetchDetailsAndMarketChart(id: id, vsCurrency: vsCurrency);
+      final desc = (details.data?['description']?['en'] ?? '').toString();
+      final prices = (chart.data?['prices'] as List).cast<List>().map((row) => [row[0] as num, (row[1] as num)]).toList();
+      return Ok(CoinDetail(id: id, description: desc, prices: prices));
+    } catch (e) {
+      if (e is AppFailure) return Err(e);
+      return Err(AppFailure('Erro inesperado ao buscar detalhes'));
+    }
+  }
 
 }

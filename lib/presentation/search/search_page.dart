@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/src/widgets/framework.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../state/state_search.dart';
+import '../../viewmodels/favorites_viewmodel.dart';
+import '../detail/detail_page.dart';
 
 class SearchPage extends ConsumerStatefulWidget {
   const SearchPage({super.key});
@@ -42,7 +43,27 @@ class _SearchPageState extends ConsumerState<SearchPage> {
               child: Text(state.error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
             ),
             const SizedBox(height: 8),
-
+            Expanded(
+              child: state.results.isEmpty
+                  ? const Center(child: Text('Nenhuma criptomoeda encontrada'))
+                  : ListView.separated(
+                itemCount: state.results.length,
+                separatorBuilder: (_, __) => const Divider(height: 1),
+                itemBuilder: (context, i) {
+                  final c = state.results[i];
+                  return ListTile(
+                    leading: CircleAvatar(backgroundImage: NetworkImage(c.imageUrl)),
+                    title: Text('${c.name} (${c.symbol})'),
+                    subtitle: Text('Preço: ${c.price.toStringAsFixed(2)} | 24h: ${c.change24h.toStringAsFixed(2)}%'),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.favorite_border),
+                      onPressed: () => ref.read(favoritesProvider.notifier).add(c),
+                    ),
+                    onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => DetailPage(coinId: c.id, title: c.name))),
+                  );
+                },
+              ),
+            )
           ],
         ),
       ),
@@ -53,5 +74,4 @@ class _SearchPageState extends ConsumerState<SearchPage> {
       ),
     );
   }
-
 }
