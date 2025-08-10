@@ -6,6 +6,7 @@ import '../../viewmodels/favorites_viewmodel.dart';
 import '../detail/detail_page.dart';
 import '../../core/utils/debouncer.dart';
 import '../widgets/coin_list_tile.dart';
+import '../widgets/skeletons.dart';
 
 class SearchPage extends ConsumerStatefulWidget {
   const SearchPage({super.key});
@@ -16,7 +17,7 @@ class SearchPage extends ConsumerStatefulWidget {
 
 class _SearchPageState extends ConsumerState<SearchPage> {
   final _controller = TextEditingController();
-  final _debouncer = Debouncer(delay: const Duration(milliseconds: 400));
+  final _debouncer = Debouncer(delay: const Duration(milliseconds: 550));
 
   @override
   void dispose() {
@@ -67,7 +68,6 @@ class _SearchPageState extends ConsumerState<SearchPage> {
               ),
 
               const SizedBox(height: 12),
-              if (state.loading) const LinearProgressIndicator(),
               if (state.error != null)
                 Padding(
                   padding: const EdgeInsets.only(top: 12),
@@ -78,15 +78,29 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                 ),
               const SizedBox(height: 8),
 
-              // Resultados
               Expanded(
-                child: state.results.isEmpty
-                    ? const Center(child: Text('Nenhuma criptomoeda encontrada'))
+                child: state.loading
+                    ? ListView.separated(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  itemCount: 8,
+                  separatorBuilder: (_, __) => const Divider(height: 1),
+                  itemBuilder: (_, __) => const CoinTileSkeleton(),
+                )
+                    : (state.results.isEmpty
+                    ? ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  children: const [
+                    SizedBox(height: 120),
+                    Center(child: Text('Nenhuma criptomoeda encontrada')),
+                  ],
+                )
                     : ListView.separated(
+                  physics: const AlwaysScrollableScrollPhysics(),
                   itemCount: state.results.length,
                   separatorBuilder: (_, __) => const Divider(height: 1),
                   itemBuilder: (context, i) {
                     final c = state.results[i];
+                    final favs = ref.watch(favoritesProvider);
                     final isFav = favs.any((e) => e.id == c.id);
 
                     return CoinListTile(
@@ -94,8 +108,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                       isFavorite: isFav,
                       showFavoriteAction: true,
                       onFavorite: () {
-                        final favsNotifier =
-                        ref.read(favoritesProvider.notifier);
+                        final favsNotifier = ref.read(favoritesProvider.notifier);
                         if (isFav) {
                           favsNotifier.remove(c.id);
                         } else {
@@ -113,7 +126,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                       ),
                     );
                   },
-                ),
+                )),
               ),
             ],
           ),

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../favorites/favorites_page.dart';
 import '../search/search_page.dart';
+import '../../viewmodels/favorites_viewmodel.dart';
 
 class HomePage extends ConsumerStatefulWidget  {
   const HomePage({super.key});
@@ -14,6 +15,12 @@ class HomePage extends ConsumerStatefulWidget  {
 class _HomePageState extends ConsumerState<HomePage> {
   int _index = 0;
   final _pages = const [SearchPage(), FavoritesPage()];
+
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(() => ref.read(favoritesProvider.notifier).load());
+  }
 
   @override
   Widget build(BuildContext context) {

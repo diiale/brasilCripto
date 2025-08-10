@@ -9,9 +9,13 @@ class SearchState {
   final bool loading;
   final List<Coin> results;
   final String? error;
-  const SearchState({this.loading=false, this.results=const [], this.error});
+  const SearchState({this.loading = false, this.results = const [], this.error});
   SearchState copyWith({bool? loading, List<Coin>? results, String? error}) =>
-      SearchState(loading: loading ?? this.loading, results: results ?? this.results, error: error);
+      SearchState(
+        loading: loading ?? this.loading,
+        results: results ?? this.results,
+        error: error,
+      );
 }
 
 final repositoryProvider = Provider<CryptoRepository>((ref) => CryptoRepository(CoinGeckoApi()));

@@ -5,9 +5,9 @@ import '../../domain/entities/coin.dart';
 class CoinListTile extends StatelessWidget {
   final Coin coin;
   final VoidCallback? onTap;
-  final VoidCallback? onFavorite;   // ação ao tocar no coração
+  final VoidCallback? onFavorite;
   final bool showFavoriteAction;
-  final bool isFavorite;            // <- NOVO: estado do favorito
+  final bool isFavorite;
 
   const CoinListTile({
     super.key,
@@ -15,7 +15,7 @@ class CoinListTile extends StatelessWidget {
     this.onTap,
     this.onFavorite,
     this.showFavoriteAction = true,
-    this.isFavorite = false,        // <- default: não favorito
+    this.isFavorite = false,
   });
 
   @override
@@ -72,7 +72,7 @@ class _AnimatedFavButton extends StatelessWidget {
         return ScaleTransition(scale: CurvedAnimation(parent: anim, curve: Curves.easeOutBack), child: child);
       },
       child: IconButton(
-        key: ValueKey(isFavorite), // força o AnimatedSwitcher a trocar o child
+        key: ValueKey(isFavorite),
         onPressed: onPressed,
         tooltip: isFavorite ? 'Remover dos favoritos' : 'Adicionar aos favoritos',
         icon: Icon(
