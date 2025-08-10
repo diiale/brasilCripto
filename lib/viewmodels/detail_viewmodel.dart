@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/repositories/crypto_repository.dart';
-import '../state/detail_state.dart';
+import '../state/state_detail.dart';
 
 class DetailViewModel extends StateNotifier<DetailState> {
   final CryptoRepository repo;

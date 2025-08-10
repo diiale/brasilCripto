@@ -1,23 +1,24 @@
-import 'package:brasil_cripto/presentation/splash/splash_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import 'presentation/splash/splash_page.dart';
+import 'theme/app_theme.dart';
 
 void main() {
   runApp(const ProviderScope(child: BrasilCripto()));
 }
 
-class BrasilCripto extends StatelessWidget {
+class BrasilCripto extends ConsumerWidget {
   const BrasilCripto({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return MaterialApp(
       title: 'BrasilCripto',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
-        useMaterial3: true,
-      ),
+      theme: AppTheme.light(),
+      darkTheme: AppTheme.dark(),
+      themeMode: ThemeMode.system,
       home: const SplashPage(),
     );
   }

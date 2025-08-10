@@ -29,6 +29,15 @@ class CoinGeckoApi {
     }
   }
 
+  // NOVO: busca por nome/símbolo. Retorna coins que combinam com `query`.
+  Future<Response> searchAssets(String query) async {
+    try {
+      return await _dio.get('/search', queryParameters: {'query': query});
+    } on DioException catch (e) {
+      throw AppFailure(e.message ?? 'Erro na API', statusCode: e.response?.statusCode);
+    }
+  }
+
   /// Detalhes + histórico de preço curto
   Future<(Response, Response)> fetchDetailsAndMarketChart({required String id, required String vsCurrency}) async {
     try {

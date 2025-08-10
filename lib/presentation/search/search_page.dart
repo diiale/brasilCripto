@@ -4,73 +4,120 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../state/state_search.dart';
 import '../../viewmodels/favorites_viewmodel.dart';
 import '../detail/detail_page.dart';
+import '../../core/utils/debouncer.dart';
+import '../widgets/coin_list_tile.dart';
 
 class SearchPage extends ConsumerStatefulWidget {
   const SearchPage({super.key});
 
   @override
   ConsumerState<SearchPage> createState() => _SearchPageState();
-
 }
 
 class _SearchPageState extends ConsumerState<SearchPage> {
   final _controller = TextEditingController();
+  final _debouncer = Debouncer(delay: const Duration(milliseconds: 400));
+
+  @override
+  void dispose() {
+    _debouncer.dispose();
+    _controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(searchProvider);
+    final favs = ref.watch(favoritesProvider);
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Buscar Criptomoedas')),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            TextField(
-              controller: _controller,
-              decoration: InputDecoration(
-                hintText: 'ids separados por vírgula (ex.: bitcoin,ethereum)',
-                suffixIcon: IconButton(
-                  icon: const Icon(Icons.search),
-                  onPressed: () => ref.read(searchProvider.notifier).search(_controller.text),
+      // sem AppBar — o título vai dentro do body
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              Align(
+                alignment: Alignment.center,
+                child: Text(
+                  'Buscar Criptomoedas',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
-              onSubmitted: (v) => ref.read(searchProvider.notifier).search(v),
-            ),
-            const SizedBox(height: 12),
-            if (state.loading) const LinearProgressIndicator(),
-            if (state.error != null) Padding(
-              padding: const EdgeInsets.only(top: 12),
-              child: Text(state.error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
-            ),
-            const SizedBox(height: 8),
-            Expanded(
-              child: state.results.isEmpty
-                  ? const Center(child: Text('Nenhuma criptomoeda encontrada'))
-                  : ListView.separated(
-                itemCount: state.results.length,
-                separatorBuilder: (_, __) => const Divider(height: 1),
-                itemBuilder: (context, i) {
-                  final c = state.results[i];
-                  return ListTile(
-                    leading: CircleAvatar(backgroundImage: NetworkImage(c.imageUrl)),
-                    title: Text('${c.name} (${c.symbol})'),
-                    subtitle: Text('Preço: ${c.price.toStringAsFixed(2)} | 24h: ${c.change24h.toStringAsFixed(2)}%'),
-                    trailing: IconButton(
-                      icon: const Icon(Icons.favorite_border),
-                      onPressed: () => ref.read(favoritesProvider.notifier).add(c),
-                    ),
-                    onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => DetailPage(coinId: c.id, title: c.name))),
-                  );
+              const SizedBox(height: 12),
+
+              TextField(
+                controller: _controller,
+                decoration: InputDecoration(
+                  hintText: 'Digite o nome da criptomoeda',
+                  suffixIcon: IconButton(
+                    icon: const Icon(Icons.search),
+                    onPressed: () =>
+                        ref.read(searchProvider.notifier).search(_controller.text),
+                  ),
+                ),
+                onChanged: (v) {
+                  _debouncer(() =>
+                      ref.read(searchProvider.notifier).search(v));
                 },
+                onSubmitted: (v) =>
+                    ref.read(searchProvider.notifier).search(v),
               ),
-            )
-          ],
+
+              const SizedBox(height: 12),
+              if (state.loading) const LinearProgressIndicator(),
+              if (state.error != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 12),
+                  child: Text(
+                    state.error!,
+                    style: TextStyle(color: Theme.of(context).colorScheme.error),
+                  ),
+                ),
+              const SizedBox(height: 8),
+
+              // Resultados
+              Expanded(
+                child: state.results.isEmpty
+                    ? const Center(child: Text('Nenhuma criptomoeda encontrada'))
+                    : ListView.separated(
+                  itemCount: state.results.length,
+                  separatorBuilder: (_, __) => const Divider(height: 1),
+                  itemBuilder: (context, i) {
+                    final c = state.results[i];
+                    final isFav = favs.any((e) => e.id == c.id);
+
+                    return CoinListTile(
+                      coin: c,
+                      isFavorite: isFav,
+                      showFavoriteAction: true,
+                      onFavorite: () {
+                        final favsNotifier =
+                        ref.read(favoritesProvider.notifier);
+                        if (isFav) {
+                          favsNotifier.remove(c.id);
+                        } else {
+                          favsNotifier.add(c);
+                        }
+                      },
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => DetailPage(
+                            coinId: c.id,
+                            title: c.name,
+                            imageUrl: c.imageUrl,
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
         ),
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => ref.read(searchProvider.notifier).search(_controller.text),
-        icon: const Icon(Icons.search),
-        label: const Text('Buscar'),
       ),
     );
   }
