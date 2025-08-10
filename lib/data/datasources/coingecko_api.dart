@@ -1,16 +1,21 @@
 import 'package:dio/dio.dart';
-
 import '../../core/errors/app_failure.dart';
 
 class CoinGeckoApi {
   final Dio _dio;
   static const _base = 'https://api.coingecko.com/api/v3';
 
-  CoinGeckoApi([Dio? dio]) : _dio = dio ?? Dio(BaseOptions(baseUrl: _base));
+  CoinGeckoApi([Dio? dio])
+      : _dio = dio ?? Dio(BaseOptions(
+      baseUrl: _base,
+      headers: {'x-cg-demo-api-key': 'CG-3gguMiYiTvtANVc4fXmRSB58'},
+  ));
 
-  /// Busca lista de moedas com preço, market cap e variação.
-  /// [query] pode ser id(s) separados por vírgula (ex: 'bitcoin,ethereum') ou vazio para trending.
-  Future<Response> fetchMarkets({required String vsCurrency, String? ids}) async {
+  Future<Response> fetchMarkets({
+    required String vsCurrency,
+    String? ids,
+    CancelToken? cancelToken, // <---
+  }) async {
     try {
       return await _dio.get(
         '/coins/markets',
@@ -23,29 +28,50 @@ class CoinGeckoApi {
           'sparkline': false,
           'price_change_percentage': '24h'
         },
+        cancelToken: cancelToken,
       );
     } on DioException catch (e) {
-      throw AppFailure(e.message ?? 'Erro na API', statusCode: e.response?.statusCode);
+      throw AppFailure(e.message ?? 'Erro na API',
+          statusCode: e.response?.statusCode);
     }
   }
 
-  // NOVO: busca por nome/símbolo. Retorna coins que combinam com `query`.
-  Future<Response> searchAssets(String query) async {
+  Future<Response> searchAssets(
+      String query, {
+        CancelToken? cancelToken,
+      }) async {
     try {
-      return await _dio.get('/search', queryParameters: {'query': query});
+      return await _dio.get(
+        '/search',
+        queryParameters: {'query': query},
+        cancelToken: cancelToken,
+      );
     } on DioException catch (e) {
-      throw AppFailure(e.message ?? 'Erro na API', statusCode: e.response?.statusCode);
+      throw AppFailure(e.message ?? 'Erro na API',
+          statusCode: e.response?.statusCode);
     }
   }
 
-  /// Detalhes + histórico de preço curto
-  Future<(Response, Response)> fetchDetailsAndMarketChart({required String id, required String vsCurrency}) async {
+  Future<(Response, Response)> fetchDetailsAndMarketChart({
+    required String id,
+    required String vsCurrency,
+    CancelToken? cancelToken,
+  }) async {
     try {
-      final details = await _dio.get('/coins/$id', queryParameters: {'localization': 'false'});
-      final chart = await _dio.get('/coins/$id/market_chart', queryParameters: {'vs_currency': vsCurrency, 'days': 7});
+      final details = await _dio.get(
+        '/coins/$id',
+        queryParameters: {'localization': 'false'},
+        cancelToken: cancelToken,
+      );
+      final chart = await _dio.get(
+        '/coins/$id/market_chart',
+        queryParameters: {'vs_currency': vsCurrency, 'days': 7},
+        cancelToken: cancelToken,
+      );
       return (details, chart);
     } on DioException catch (e) {
-      throw AppFailure(e.message ?? 'Erro na API', statusCode: e.response?.statusCode);
+      throw AppFailure(e.message ?? 'Erro na API',
+          statusCode: e.response?.statusCode);
     }
   }
 }
