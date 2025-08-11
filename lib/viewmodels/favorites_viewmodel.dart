@@ -1,51 +1,53 @@
 import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../domain/entities/coin.dart';
-
 import 'package:shared_preferences/shared_preferences.dart';
+import '../domain/entities/coin.dart';
 
 class FavoritesViewModel extends StateNotifier<List<Coin>> {
   FavoritesViewModel() : super(const []);
   static const _key = 'fav_coins';
 
-  /// Carrega favoritos do storage local.
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
     final list = prefs.getStringList(_key) ?? [];
     final coins = list.map((e) {
       final m = jsonDecode(e) as Map<String, dynamic>;
       return Coin(
-        id: m['id'],
-        name: m['name'],
-        symbol: m['symbol'],
-        price: (m['price'] ?? 0).toDouble(),
-        change24h: (m['change24h'] ?? 0).toDouble(),
-        marketCap: (m['marketCap'] ?? 0).toDouble(),
-        volume24h: (m['volume24h'] ?? 0).toDouble(),
-        imageUrl: m['imageUrl'] ?? '',
+        id: m['id'] as String,
+        name: m['name'] as String,
+        symbol: m['symbol'] as String,
+        price: (m['price'] as num).toDouble(),
+        change24h: (m['change24h'] as num).toDouble(),
+        marketCap: (m['marketCap'] as num).toDouble(),
+        volume24h: (m['volume24h'] as num).toDouble(),
+        imageUrl: m['imageUrl'] as String,
       );
     }).toList();
     state = coins;
   }
 
-  /// Adiciona um favorito (idempotente).
   Future<void> add(Coin c) async {
     if (state.any((e) => e.id == c.id)) return;
-    final updated = [...state, c];
-    state = updated;
-    await _persist(updated);
+    state = [...state, c];
+    await _persist();
   }
 
-  /// Remove um favorito.
   Future<void> remove(String id) async {
-    final updated = state.where((e) => e.id != id).toList();
-    state = updated;
-    await _persist(updated);
+    state = state.where((e) => e.id != id).toList();
+    await _persist();
   }
 
-  Future<void> _persist(List<Coin> data) async {
+  Future<void> toggle(Coin c) async {
+    if (state.any((e) => e.id == c.id)) {
+      await remove(c.id);
+    } else {
+      await add(c);
+    }
+  }
+
+  Future<void> _persist() async {
     final prefs = await SharedPreferences.getInstance();
-    final encoded = data
+    final encoded = state
         .map((c) => jsonEncode({
       'id': c.id,
       'name': c.name,

@@ -10,6 +10,7 @@ class CoinListTile extends StatelessWidget {
   final bool showFavoriteAction;
   final bool isFavorite;
 
+  // NOVO:
   final Widget? trailingAction;
 
   const CoinListTile({
@@ -68,6 +69,7 @@ class CoinListTile extends StatelessWidget {
                         Text('MC: ${BrFormat.moedaCompact(coin.marketCap)}'),
                         Text('Vol: ${BrFormat.moedaCompact(coin.volume24h)}'),
 
+                        // Botão no rodapé (mesma posição), alternando entre "Adicionar..." e "✔ Favorito"
                         if (trailingAction != null)
                           trailingAction!
                         else if (showFavoriteAction)
@@ -79,6 +81,7 @@ class CoinListTile extends StatelessWidget {
                                 ? FilledButton.icon(
                               key: const ValueKey('fav-on'),
                               onPressed: () async {
+                                // Confirmação para REMOVER quando já é favorito
                                 final confirmed = await showDialog<bool>(
                                   context: context,
                                   builder: (ctx) => AlertDialog(
@@ -110,6 +113,7 @@ class CoinListTile extends StatelessWidget {
                                 : OutlinedButton(
                               key: const ValueKey('fav-off'),
                               onPressed: () {
+                                // Adiciona aos favoritos (vira ✔ Favorito no mesmo lugar)
                                 onFavorite?.call();
                               },
                               style: OutlinedButton.styleFrom(
