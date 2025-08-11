@@ -1,0 +1,6 @@
+{
+  "coins": [
+    { "id": "bitcoin", "name": "Bitcoin" },
+    { "id": "ethereum", "name": "Ethereum" }
+  ]
+}
