@@ -3,96 +3,113 @@ import '../../core/errors/app_failure.dart';
 import '../../domain/entities/coin.dart';
 import '../../domain/entities/coin_detail.dart';
 import '../../utils/result.dart';
-import '../datasources/coingecko_api.dart';
+import '../datasources/icoingecko_api.dart';
+import '../mappers/coin_mapper.dart';
 
 class CryptoRepository {
-  final CoinGeckoApi api;
+  final ICoinGeckoApi api;
   CryptoRepository(this.api);
 
   Future<Result<List<Coin>>> searchByNameOrSymbol(
-    String query, {
-    String vsCurrency = 'usd',
-    CancelToken? cancelToken,
-  }) async {
+      String query, {
+        String vsCurrency = 'usd',
+        CancelToken? cancelToken,
+      }) async {
     try {
-      final sres = await api.searchAssets(query, cancelToken: cancelToken);
-      final coinsList = (sres.data?['coins'] as List? ?? [])
-          .cast<Map>()
-          .where((m) => (m['id'] as String?)?.isNotEmpty == true)
+      final search = await api.searchAssets(query, cancelToken: cancelToken);
+
+      final coinsRaw =
+      search.data is Map ? (search.data['coins'] as List?) : null;
+      if (coinsRaw == null) return const Ok(<Coin>[]);
+
+      final ids = coinsRaw
+          .whereType<Map>()
+          .map((m) => (m['id'] ?? '') as String)
+          .where((id) => id.isNotEmpty)
           .toList();
 
-      if (coinsList.isEmpty) return const Ok(<Coin>[]);
-
-      final ids = coinsList.take(10).map((m) => m['id'] as String).join(',');
+      if (ids.isEmpty) return const Ok(<Coin>[]);
 
       final markets = await api.fetchMarkets(
         vsCurrency: vsCurrency,
-        ids: ids,
+        ids: ids.take(10).join(','), // limita payload
         cancelToken: cancelToken,
       );
 
-      final data = markets.data as List<dynamic>;
-      final coins = data
-          .map(
-            (e) => Coin(
-              id: e['id'],
-              name: e['name'],
-              symbol: (e['symbol'] ?? '').toString().toUpperCase(),
-              price: (e['current_price'] ?? 0).toDouble(),
-              change24h: (e['price_change_percentage_24h'] ?? 0).toDouble(),
-              marketCap: (e['market_cap'] ?? 0).toDouble(),
-              volume24h: (e['total_volume'] ?? 0).toDouble(),
-              imageUrl: (e['image'] ?? '').toString(),
-            ),
-          )
+      final list = (markets.data is List) ? (markets.data as List) : const [];
+      final mapped = list
+          .whereType<Map>()
+          .map(CoinMapper.fromMarketJson)
+          .whereType<Coin>()
           .toList();
 
-      return Ok(coins);
+      return Ok(mapped);
+    } on AppFailure catch (e) {
+      return Err(e);
     } on DioException catch (e) {
       final code = e.response?.statusCode ?? 0;
       if (code == 429) {
-        return Err(
-          AppFailure(
-            'Muitas buscas em sequência. Aguarde alguns segundos e tente novamente.',
-          ),
-        );
+        return Err(const AppFailure(
+          'Muitas buscas em sequência. Aguarde alguns segundos e tente novamente.',
+          statusCode: 429,
+        ));
       }
-      return Err(AppFailure('Falha ao buscar moedas. Código: $code'));
-    } catch (_) {
-      return Err(AppFailure('Erro inesperado ao buscar moedas.'));
+      return Err(AppFailure(
+        'Falha ao buscar moedas. Código: $code',
+        statusCode: code,
+      ));
+    } catch (e) {
+      return Err(AppFailure('Erro inesperado: $e'));
     }
   }
 
-  Future<Result<CoinDetail>> getCoinDetail(
+  Future<Result<CoinDetail>> getDetail(
       String id, {
         String vsCurrency = 'usd',
         CancelToken? cancelToken,
       }) async {
     try {
-      final (details, chart) = await api.fetchDetailsAndMarketChart(
-        id: id,
+      final (details, chart) = await api.fetchCoinDetail(
+        id,
         vsCurrency: vsCurrency,
         cancelToken: cancelToken,
       );
 
-      final desc = (details.data?['description']?['en'] ?? '').toString();
-      final prices = (chart.data?['prices'] as List? ?? const [])
-          .cast<List>()
-          .map((row) => [row[0] as num, (row[1] as num)])
-          .toList();
+      String desc = '';
+      if (details.data is Map &&
+          (details.data['description'] is Map) &&
+          (details.data['description']['en'] is String)) {
+        desc = details.data['description']['en'] as String;
+      }
 
-      return Ok(CoinDetail(id: id, description: desc, prices: prices));
+      final raw = (chart.data is Map) ? (chart.data['prices'] as List?) : null;
+      if (raw == null) {
+        return Ok(CoinDetail(id: id, description: desc, prices: const []));
+      }
+
+      final normalized = raw.whereType<List>().map<List<num>>((e) {
+        final ts = (e.isNotEmpty && e[0] is num) ? (e[0] as num) : 0;
+        final price = (e.length > 1 && e[1] is num) ? (e[1] as num) : 0;
+        return <num>[ts, price];
+      }).toList();
+
+      return Ok(CoinDetail(
+        id: id,
+        description: desc,
+        prices: normalized,
+      ));
+    } on AppFailure catch (e) {
+      return Err(e);
     } on DioException catch (e) {
       final code = e.response?.statusCode ?? 0;
-      if (code == 429) {
-        return Err(AppFailure('Muitas requisições. Aguarde alguns segundos e tente novamente.', statusCode: 429));
-      }
-      if (e.type == DioExceptionType.connectionTimeout || e.type == DioExceptionType.receiveTimeout) {
-        return Err(AppFailure('Tempo de resposta excedido. Verifique sua conexão e tente novamente.'));
-      }
-      return Err(AppFailure('Falha ao buscar detalhes. Código: $code'));
-    } catch (_) {
-      return Err(AppFailure('Erro inesperado ao buscar detalhes'));
+      return Err(AppFailure(
+        'Falha ao carregar detalhes. Código: $code',
+        statusCode: code,
+      ));
+    } catch (e) {
+      return Err(AppFailure('Erro inesperado: $e'));
     }
   }
+
+  CryptoRepository.throwable() : api = throw UnimplementedError();
 }
