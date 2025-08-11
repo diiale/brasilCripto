@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../viewmodels/favorites_viewmodel.dart';
 import '../favorites/favorites_page.dart';
 import '../search/search_page.dart';
-import '../../viewmodels/favorites_viewmodel.dart';
 
-class HomePage extends ConsumerStatefulWidget  {
+class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
 
   @override
@@ -14,12 +14,17 @@ class HomePage extends ConsumerStatefulWidget  {
 
 class _HomePageState extends ConsumerState<HomePage> {
   int _index = 0;
-  final _pages = const [SearchPage(), FavoritesPage()];
+  final _pages = const [
+    SearchPage(),
+    FavoritesPage(),
+  ];
 
   @override
   void initState() {
     super.initState();
-    Future.microtask(() => ref.read(favoritesProvider.notifier).load());
+    Future.microtask(() {
+      ref.read(favoritesProvider.notifier).load();
+    });
   }
 
   @override
@@ -29,17 +34,26 @@ class _HomePageState extends ConsumerState<HomePage> {
         centerTitle: true,
         title: Image.asset(
           'assets/branding/logo.png',
-          height: 280,
+          height: 340,
+          errorBuilder: (_, __, ___) => const Text('BrasilCripto'),
         ),
       ),
       body: _pages[_index],
       bottomNavigationBar: NavigationBar(
         selectedIndex: _index,
+        onDestinationSelected: (i) {
+          setState(() => _index = i);
+        },
         destinations: const [
-          NavigationDestination(icon: Icon(Icons.search), label: 'Buscar'),
-          NavigationDestination(icon: Icon(Icons.favorite, color: Colors.red), label: 'Favoritos'),
+          NavigationDestination(
+            icon: Icon(Icons.search),
+            label: 'Buscar',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.favorite, color: Colors.red),
+            label: 'Favoritos',
+          ),
         ],
-        onDestinationSelected: (i) => setState(() => _index = i),
       ),
     );
   }

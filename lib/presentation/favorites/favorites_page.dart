@@ -16,6 +16,7 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage> {
   @override
   void initState() {
     super.initState();
+    // Garante que favoritos sejam carregados ao abrir a tela
     Future.microtask(() => ref.read(favoritesProvider.notifier).load());
   }
 
@@ -25,7 +26,7 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage> {
 
     return Scaffold(
       body: RefreshIndicator(
-        onRefresh: () async => ref.read(favoritesProvider.notifier).load(),
+        onRefresh: () => ref.read(favoritesProvider.notifier).load(),
         child: favs.isEmpty
             ? ListView(
           physics: const AlwaysScrollableScrollPhysics(),
@@ -53,8 +54,14 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage> {
                       title: const Text('Remover favorito?'),
                       content: Text('Deseja remover ${c.name}?'),
                       actions: [
-                        TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')),
-                        FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Remover')),
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, false),
+                          child: const Text('Cancelar'),
+                        ),
+                        FilledButton(
+                          onPressed: () => Navigator.pop(context, true),
+                          child: const Text('Remover'),
+                        ),
                       ],
                     ),
                   );
@@ -64,16 +71,19 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage> {
                 },
                 style: FilledButton.styleFrom(
                   minimumSize: const Size(0, 36),
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 8,
+                  ),
                 ),
                 child: const Text('Remover Favorito'),
               ),
               onTap: () => Navigator.of(context).push(
                 MaterialPageRoute(
                   builder: (_) => DetailPage(
-                    coinId: c.id,
+                    id: c.id,
                     title: c.name,
-                    imageUrl: c.imageUrl,
+                    coin: c,
                   ),
                 ),
               ),
