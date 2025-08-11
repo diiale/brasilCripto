@@ -1,106 +1,113 @@
-import 'package:brasil_cripto/core/di/providers.dart';
+import 'package:brasil_cripto/data/datasources/icoingecko_api.dart';
 import 'package:brasil_cripto/data/repositories/crypto_repository.dart';
-import 'package:brasil_cripto/domain/entities/coin.dart';
-import 'package:brasil_cripto/domain/entities/coin_detail.dart';
 import 'package:brasil_cripto/presentation/home/home_page.dart';
-import 'package:brasil_cripto/utils/result.dart';
+import 'package:brasil_cripto/state/state_search.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-/// Repo fake para testes de widget (sem chamadas de rede)
-class FakeRepo extends CryptoRepository {
-  FakeRepo() : super.throwable();
-
+/// Fake da API usada pelo repositório (sem rede nos testes).
+class FakeApi implements ICoinGeckoApi {
   @override
-  Future<Result<List<Coin>>> searchByNameOrSymbol(
-      String query, {
-        String vsCurrency = 'usd',
-        cancelToken,
-      }) async {
-    // Retorna dados estáticos independente do termo
-    return const Ok([
-      Coin(
-        id: 'bitcoin',
-        name: 'Bitcoin',
-        symbol: 'btc',
-        price: 100000.0,
-        change24h: 1.23,
-        marketCap: 1000000000,
-        volume24h: 123456789,
-        imageUrl: 'https://img/bitcoin.png',
-      ),
-      Coin(
-        id: 'ethereum',
-        name: 'Ethereum',
-        symbol: 'eth',
-        price: 5000.0,
-        change24h: -0.5,
-        marketCap: 500000000,
-        volume24h: 987654321,
-        imageUrl: 'https://img/eth.png',
-      ),
-    ]);
+  Future<Response> searchAssets(String query, {CancelToken? cancelToken}) async {
+    final data = {
+      'coins': (query.toLowerCase().contains('bit'))
+          ? [
+        {'id': 'bitcoin'},
+      ]
+          : [],
+    };
+    return Response(
+      requestOptions: RequestOptions(path: '/search'),
+      data: data,
+      statusCode: 200,
+    );
   }
 
   @override
-  Future<Result<CoinDetail>> getDetail(
+  Future<Response> fetchMarkets({
+    required String vsCurrency,
+    String? ids,
+    CancelToken? cancelToken,
+  }) async {
+    final list = (ids == null || !ids.contains('bitcoin'))
+        ? <dynamic>[]
+        : <dynamic>[
+      {
+        'id': 'bitcoin',
+        'name': 'Bitcoin',
+        'symbol': 'btc',
+        'current_price': 100000.0,
+        'price_change_percentage_24h': 1.5,
+        'market_cap': 1000000000.0,
+        'total_volume': 50000000.0,
+        'image': 'https://example.com/btc.png',
+      },
+    ];
+
+    return Response(
+      requestOptions: RequestOptions(path: '/markets'),
+      data: list,
+      statusCode: 200,
+    );
+  }
+
+  @override
+  Future<(Response details, Response chart)> fetchCoinDetail(
       String id, {
         String vsCurrency = 'usd',
-        cancelToken,
+        CancelToken? cancelToken,
       }) async {
-    return Ok(CoinDetail(
-      id: id,
-      description: 'Moeda $id para testes',
-      prices: [
-        [DateTime.now().millisecondsSinceEpoch - 3600 * 1000, 1.0],
-        [DateTime.now().millisecondsSinceEpoch, 2.0],
-      ],
-    ));
+    // Não usado neste teste
+    throw UnimplementedError();
   }
 }
 
 void main() {
-  testWidgets('Home -> SearchPage renderiza e busca com FakeRepo',
-          (WidgetTester tester) async {
-        //Monta o app com o repositoryProvider
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: [
-              repositoryProvider.overrideWithValue(FakeRepo()),
-            ],
-            child: const MaterialApp(home: HomePage()),
-          ),
-        );
+  testWidgets('Home -> SearchPage renderiza e busca com FakeRepo', (tester) async {
+    // Override do provider do repositório para usar a FakeApi
+    final overrides = [
+      repositoryProvider.overrideWithValue(CryptoRepository(FakeApi())),
+    ];
 
-        //A SearchPage deve exibir o título
-        expect(find.text('Buscar Criptomoedas'), findsOneWidget);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: overrides,
+        child: const MaterialApp(home: HomePage()),
+      ),
+    );
 
-        //Digita no campo de busca para disparar o search
-        final textField = find.byType(TextField);
-        expect(textField, findsOneWidget);
+    // Primeiro frame
+    await tester.pumpAndSettle();
 
-        await tester.enterText(textField, 'btc');
+    // Encontra o TextField da SearchPage
+    final textField = find.byType(TextField);
+    expect(textField, findsOneWidget);
 
-        //A SearchPage usa debounce (~550ms); aguarde o ciclo de eventos
-        await tester.pump(const Duration(milliseconds: 600)); // debounce
-        await tester.pumpAndSettle();
+    // Digita 'bit' -> vai parear com nosso Fake e resultar em 'Bitcoin'
+    await tester.enterText(textField, 'bit');
 
-        //Deve aparecer pelo menos um resultado do FakeRepo
-        expect(find.text('Bitcoin'), findsWidgets);
+    // Encontra a LUPA QUE É SUFIXO DO TEXTFIELD (e não a do BottomNavigationBar)
+    final suffixSearchIcon = find.descendant(
+      of: textField,
+      matching: find.byIcon(Icons.search),
+    );
+    expect(suffixSearchIcon, findsOneWidget);
 
-        //Navega para a aba Favoritos (ícone coração) e volta
-        //(apenas para garantir que a NavigationBar está funcionando)
-        final favIcon = find.byIcon(Icons.favorite);
-        if (favIcon.evaluate().isNotEmpty) {
-          await tester.tap(favIcon);
-          await tester.pumpAndSettle();
-          // volta para buscar (ícone lupa)
-          final searchIcon = find.byIcon(Icons.search);
-          if (searchIcon.evaluate().isNotEmpty) {
-            await tester.tap(searchIcon);
-            await tester.pumpAndSettle();
-          }
-        }
-      });
+    // Toca a lupa do TextField para disparar a busca explicitamente
+    await tester.tap(suffixSearchIcon);
+
+    // Respeitar debounce (550ms) + throttle (até 250ms) + renderização
+    await tester.pump(const Duration(milliseconds: 600)); // debounce
+    await tester.pump(const Duration(milliseconds: 300)); // throttle
+    await tester.pumpAndSettle(const Duration(milliseconds: 300)); // render
+
+    // Deve aparecer "Bitcoin (btc)" dentro do CoinListTile
+    expect(
+      find.textContaining('Bitcoin'),
+      findsWidgets,
+      reason: 'Nenhum item com texto contendo "Bitcoin" foi encontrado após a busca.',
+    );
+  });
 }
