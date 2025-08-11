@@ -6,10 +6,10 @@ class CoinGeckoApi {
   static const _base = 'https://api.coingecko.com/api/v3';
 
   CoinGeckoApi([Dio? dio])
-      : _dio = dio ?? Dio(BaseOptions(
-      baseUrl: _base,
-      headers: {'x-cg-demo-api-key': 'CG-3gguMiYiTvtANVc4fXmRSB58'},
-  ));
+      : _dio = dio ??
+      Dio(BaseOptions(
+        baseUrl: _base,
+      ));
 
   Future<Response> fetchMarkets({
     required String vsCurrency,

@@ -18,14 +18,12 @@ class SearchViewModel extends StateNotifier<SearchState> {
   Future<void> search(String query) async {
     final q = query.trim().toLowerCase();
 
-    // mínimo de caracteres para evitar flood
-    if (q.length < 2) {
+    if (q.length < 3) {
       state = state.copyWith(results: [], error: null, loading: false);
       _inFlight?.cancel();
       return;
     }
 
-    // throttle: garante intervalo mínimo entre chamadas
     final now = DateTime.now();
     if (now.difference(_lastCall) < const Duration(milliseconds: 800)) {
       return;
@@ -40,7 +38,6 @@ class SearchViewModel extends StateNotifier<SearchState> {
       return;
     }
 
-    // cancela a requisição anterior (se existir)
     _inFlight?.cancel();
     _inFlight = CancelToken();
 

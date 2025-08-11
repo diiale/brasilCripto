@@ -107,7 +107,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                       coin: c,
                       isFavorite: isFav,
                       showFavoriteAction: true,
-                      onFavorite: () {
+                      onFavorite: () async {
                         final favsNotifier = ref.read(favoritesProvider.notifier);
                         if (isFav) {
                           favsNotifier.remove(c.id);

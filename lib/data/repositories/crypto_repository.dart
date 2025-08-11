@@ -64,24 +64,32 @@ class CryptoRepository {
   }
 
   Future<Result<CoinDetail>> getCoinDetail(
-    String id, {
-    String vsCurrency = 'usd',
-    CancelToken? cancelToken,
-  }) async {
+      String id, {
+        String vsCurrency = 'usd',
+        CancelToken? cancelToken,
+      }) async {
     try {
       final (details, chart) = await api.fetchDetailsAndMarketChart(
         id: id,
         vsCurrency: vsCurrency,
         cancelToken: cancelToken,
       );
+
       final desc = (details.data?['description']?['en'] ?? '').toString();
-      final prices = (chart.data?['prices'] as List)
+      final prices = (chart.data?['prices'] as List? ?? const [])
           .cast<List>()
           .map((row) => [row[0] as num, (row[1] as num)])
           .toList();
+
       return Ok(CoinDetail(id: id, description: desc, prices: prices));
     } on DioException catch (e) {
       final code = e.response?.statusCode ?? 0;
+      if (code == 429) {
+        return Err(AppFailure('Muitas requisições. Aguarde alguns segundos e tente novamente.', statusCode: 429));
+      }
+      if (e.type == DioExceptionType.connectionTimeout || e.type == DioExceptionType.receiveTimeout) {
+        return Err(AppFailure('Tempo de resposta excedido. Verifique sua conexão e tente novamente.'));
+      }
       return Err(AppFailure('Falha ao buscar detalhes. Código: $code'));
     } catch (_) {
       return Err(AppFailure('Erro inesperado ao buscar detalhes'));

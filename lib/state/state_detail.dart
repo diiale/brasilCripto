@@ -1,6 +1,7 @@
-import 'package:brasil_cripto/state/state_search.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../data/datasources/coingecko_api.dart';
+import '../data/repositories/crypto_repository.dart';
 import '../domain/entities/coin_detail.dart';
 import '../viewmodels/detail_viewmodel.dart';
 
@@ -13,7 +14,9 @@ class DetailState {
       DetailState(loading: loading ?? this.loading, data: data ?? this.data, error: error);
 }
 
-final detailProvider = StateNotifierProvider.autoDispose<DetailViewModel, DetailState>((ref) {
-  final repo = ref.read(repositoryProvider);
-  return DetailViewModel(repo);
-});
+final detailRepositoryProvider =
+Provider<CryptoRepository>((ref) => CryptoRepository(CoinGeckoApi()));
+
+final detailProvider =
+StateNotifierProvider<DetailViewModel, DetailState>(
+        (ref) => DetailViewModel(ref.read(detailRepositoryProvider)));

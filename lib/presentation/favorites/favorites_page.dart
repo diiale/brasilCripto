@@ -22,12 +22,10 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage> {
   @override
   Widget build(BuildContext context) {
     final favs = ref.watch(favoritesProvider);
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Favoritos')),
       body: RefreshIndicator(
-        onRefresh: () async {
-          await ref.read(favoritesProvider.notifier).load();
-        },
+        onRefresh: () async => ref.read(favoritesProvider.notifier).load(),
         child: favs.isEmpty
             ? ListView(
           physics: const AlwaysScrollableScrollPhysics(),
@@ -38,48 +36,44 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage> {
         )
             : ListView.separated(
           physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.symmetric(vertical: 8),
           itemCount: favs.length,
-          separatorBuilder: (_, __) => const Divider(height: 1),
+          separatorBuilder: (_, __) => const SizedBox(height: 4),
           itemBuilder: (context, i) {
             final c = favs[i];
-            return Dismissible(
-              key: ValueKey(c.id),
-              direction: DismissDirection.endToStart,
-              confirmDismiss: (_) async {
-                return await showDialog<bool>(
-                  context: context,
-                  builder: (_) => AlertDialog(
-                    title: const Text('Remover favorito?'),
-                    content: Text('Deseja remover ${c.name}?'),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context, false),
-                        child: const Text('Cancelar'),
-                      ),
-                      FilledButton(
-                        onPressed: () => Navigator.pop(context, true),
-                        child: const Text('Remover'),
-                      ),
-                    ],
-                  ),
-                ) ??
-                    false;
-              },
-              onDismissed: (_) =>
-                  ref.read(favoritesProvider.notifier).remove(c.id),
-              background: Container(
-                color: Theme.of(context).colorScheme.errorContainer,
-                alignment: Alignment.centerRight,
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: const Icon(Icons.delete),
+
+            return CoinListTile(
+              coin: c,
+              showFavoriteAction: false,
+              trailingAction: FilledButton.tonal(
+                onPressed: () async {
+                  final confirm = await showDialog<bool>(
+                    context: context,
+                    builder: (_) => AlertDialog(
+                      title: const Text('Remover favorito?'),
+                      content: Text('Deseja remover ${c.name}?'),
+                      actions: [
+                        TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')),
+                        FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Remover')),
+                      ],
+                    ),
+                  );
+                  if (confirm == true) {
+                    await ref.read(favoritesProvider.notifier).remove(c.id);
+                  }
+                },
+                style: FilledButton.styleFrom(
+                  minimumSize: const Size(0, 36),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                ),
+                child: const Text('Remover Favorito'),
               ),
-              child: CoinListTile(
-                coin: c,
-                showFavoriteAction: false,
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) =>
-                        DetailPage(coinId: c.id, title: c.name, imageUrl: c.imageUrl),
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => DetailPage(
+                    coinId: c.id,
+                    title: c.name,
+                    imageUrl: c.imageUrl,
                   ),
                 ),
               ),

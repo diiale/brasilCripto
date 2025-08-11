@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:fl_chart/fl_chart.dart';
 import '../../state/state_detail.dart';
+import '../widgets/price_chart.dart';
 import '../widgets/skeletons.dart';
 
 class DetailPage extends ConsumerStatefulWidget {
@@ -34,104 +34,89 @@ class _DetailPageState extends ConsumerState<DetailPage> {
     return Scaffold(
       appBar: AppBar(title: Text(widget.title)),
       body: state.loading
-          ? Padding(
+          ? ListView(
         padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Avatar + título
-            Row(
-              children: const [
-                CircleSkeleton(size: 72),
-                SizedBox(width: 16),
-                Expanded(child: RectSkeleton(height: 20, width: double.infinity)),
-              ],
+        children: const [
+          Row(
+            children: [
+              CircleSkeleton(size: 72),
+              SizedBox(width: 16),
+              Expanded(child: RectSkeleton(height: 20, width: double.infinity)),
+            ],
+          ),
+          SizedBox(height: 24),
+          RectSkeleton(height: 16, width: 120),
+          SizedBox(height: 12),
+          RectSkeleton(height: 12, width: double.infinity),
+          SizedBox(height: 8),
+          RectSkeleton(height: 12, width: double.infinity),
+          SizedBox(height: 8),
+          RectSkeleton(height: 12, width: 220),
+          SizedBox(height: 24),
+          RectSkeleton(height: 16, width: 160),
+          SizedBox(height: 12),
+          SizedBox(
+            height: 240,
+            child: RectSkeleton(
+              height: double.infinity,
+              width: double.infinity,
+              borderRadius: BorderRadius.all(Radius.circular(16)),
             ),
-            const SizedBox(height: 24),
-
-            // Seção: Descrição (título + 3 linhas)
-            const RectSkeleton(height: 16, width: 120),
-            const SizedBox(height: 12),
-            const RectSkeleton(height: 12, width: double.infinity),
-            const SizedBox(height: 8),
-            const RectSkeleton(height: 12, width: double.infinity),
-            const SizedBox(height: 8),
-            const RectSkeleton(height: 12, width: 220),
-
-            const SizedBox(height: 24),
-
-            // Seção: Gráfico (título + caixa grande)
-            const RectSkeleton(height: 16, width: 160),
-            const SizedBox(height: 12),
-            Expanded(
-              child: RectSkeleton(
-                height: double.infinity,
-                width: double.infinity,
-                borderRadius: BorderRadius.all(Radius.circular(16)),
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       )
-          : (state.error != null
+          : (state.error != null)
           ? Center(child: Text(state.error!))
           : state.data == null
           ? const Center(child: Text('Sem dados'))
-          : Padding(
+          : ListView(
         padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (widget.imageUrl != null && widget.imageUrl!.isNotEmpty)
-              Center(
-                child: Hero(
-                  tag: 'coin:${widget.coinId}',
-                  child: CircleAvatar(
-                    radius: 36,
-                    backgroundImage: NetworkImage(widget.imageUrl!),
-                    onBackgroundImageError: (_, __) {},
-                  ),
-                ),
-              ),
-            if (widget.imageUrl != null && widget.imageUrl!.isNotEmpty)
-              const SizedBox(height: 16),
-
-            Text('Descrição', style: Theme.of(context).textTheme.titleLarge),
-            const SizedBox(height: 8),
-            Expanded(
-              child: SingleChildScrollView(
-                child: Text(
-                  state.data!.description.isEmpty
-                      ? 'Sem descrição disponível'
-                      : state.data!.description,
+        children: [
+          if (widget.imageUrl != null && widget.imageUrl!.isNotEmpty) ...[
+            Center(
+              child: Hero(
+                tag: 'coin:${widget.coinId}',
+                child: CircleAvatar(
+                  radius: 36,
+                  backgroundImage: NetworkImage(widget.imageUrl!),
+                  onBackgroundImageError: (_, __) {},
                 ),
               ),
             ),
             const SizedBox(height: 16),
-            Text('Variação (7 dias)', style: Theme.of(context).textTheme.titleLarge),
-            const SizedBox(height: 8),
-            SizedBox(
-              height: 200,
-              child: LineChart(
-                LineChartData(
-                  titlesData: const FlTitlesData(show: false),
-                  borderData: FlBorderData(show: false),
-                  gridData: const FlGridData(show: false),
-                  lineBarsData: [
-                    LineChartBarData(
-                      isCurved: true,
-                      spots: state.data!.prices
-                          .map((p) => FlSpot(p[0].toDouble(), (p[1] as num).toDouble()))
-                          .toList(),
-                      dotData: const FlDotData(show: false),
-                    ),
-                  ],
-                ),
+          ],
+
+          Card(
+            elevation: 0,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Descrição',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
+                  const SizedBox(height: 8),
+                  Text(
+                    state.data!.description.isEmpty
+                        ? 'Sem descrição disponível'
+                        : state.data!.description,
+                  ),
+                ],
               ),
             ),
-          ],
-        ),
-      )),
+          ),
+          const SizedBox(height: 12),
+
+          Text('Variação (7 dias)',
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
+          const SizedBox(height: 8),
+          SizedBox(
+            height: 240,
+            child: PriceChart(prices: state.data!.prices),
+          ),
+        ],
+      ),
     );
   }
 }
