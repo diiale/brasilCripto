@@ -2,8 +2,8 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/repositories/crypto_repository.dart';
-import '../state/state_search.dart';
 import '../domain/entities/coin.dart';
+import '../state/state_search.dart';
 
 class SearchViewModel extends StateNotifier<SearchState> {
   final CryptoRepository repo;

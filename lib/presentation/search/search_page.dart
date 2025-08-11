@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/utils/debouncer.dart';
 import '../../state/state_search.dart';
 import '../../viewmodels/favorites_viewmodel.dart';
 import '../detail/detail_page.dart';
-import '../../core/utils/debouncer.dart';
 import '../widgets/coin_list_tile.dart';
 import '../widgets/skeletons.dart';
 
@@ -29,7 +29,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(searchProvider);
-    final favs = ref.watch(favoritesProvider);
+    final favorites = ref.watch(favoritesProvider);
 
     return Scaffold(
       // sem AppBar — o título vai dentro do body
@@ -51,6 +51,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
 
               TextField(
                 controller: _controller,
+                textInputAction: TextInputAction.search,
                 decoration: InputDecoration(
                   hintText: 'Digite o nome da criptomoeda',
                   suffixIcon: IconButton(
@@ -68,6 +69,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
               ),
 
               const SizedBox(height: 12),
+
               if (state.error != null)
                 Padding(
                   padding: const EdgeInsets.only(top: 12),
@@ -100,27 +102,21 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                   separatorBuilder: (_, __) => const Divider(height: 1),
                   itemBuilder: (context, i) {
                     final c = state.results[i];
-                    final favs = ref.watch(favoritesProvider);
-                    final isFav = favs.any((e) => e.id == c.id);
+                    final isFav = favorites.any((e) => e.id == c.id);
 
                     return CoinListTile(
                       coin: c,
                       isFavorite: isFav,
                       showFavoriteAction: true,
                       onFavorite: () async {
-                        final favsNotifier = ref.read(favoritesProvider.notifier);
-                        if (isFav) {
-                          favsNotifier.remove(c.id);
-                        } else {
-                          favsNotifier.add(c);
-                        }
+                        await ref.read(favoritesProvider.notifier).toggle(c);
                       },
                       onTap: () => Navigator.of(context).push(
                         MaterialPageRoute(
                           builder: (_) => DetailPage(
-                            coinId: c.id,
+                            id: c.id,
                             title: c.name,
-                            imageUrl: c.imageUrl,
+                            coin: c,
                           ),
                         ),
                       ),
