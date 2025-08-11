@@ -58,3 +58,7 @@ Gráficos via fl_chart com datas inicial e final exibidas.
 Conversão automática para R$ nos preços.
 
 Skeleton loaders para feedback visual enquanto dados carregam.
+
+## APK
+
+Colocado a APK dentro da pasta release-apks para ser utilizadas em testes conforme solicitado.
