@@ -13,6 +13,7 @@ Aplicativo de pesquisa de criptomoedas, visualização do preço, histórico, de
 3. Execute o projeto:
    flutter run
 
+
 ## Tecnologias
 
 Flutter + Dart: Escolhidos por serem multiplataforma.
@@ -23,23 +24,11 @@ Dio: Cliente HTTP com suporte avançado a interceptors e cancelamento de requisi
 
 fl_chart: Biblioteca flexível para gráficos interativos, atendendo bem ao requisito de visualização de histórico de preços.
 
-### Padrões de Projeto e Arquitetura
 
-MVVM (Model–View–ViewModel): Facilita testes unitários e separa responsabilidades.
+## Padrões de Projeto e Arquitetura
 
-Factory: Usado em DataFactory para centralizar a criação de instâncias, evitando repetição de código.
+![My First Board](https://github.com/user-attachments/assets/a14607c7-e920-4a89-9663-415907a62209)
 
-Repository Pattern: CryptoRepository abstrai o acesso a dados, permitindo trocar a fonte sem impactar a UI.
-
-### Princípios SOLID
-
-S (Single Responsibility): Cada classe tem um papel único, como CryptoRepository para buscar dados e SearchViewModel para gerenciar estado de busca.
-
-O (Open/Closed): Fácil adicionar novas fontes de dados ou endpoints sem alterar a estrutura base.
-
-I (Interface Segregation): Interfaces como ICoinGeckoApi definem apenas o necessário, evitando implementações desnecessárias.
-
-D (Dependency Inversion): Providers do Riverpod injetam dependências, facilitando troca de implementações em testes.
 
 ### Estratégias Adotadas
 
@@ -50,6 +39,7 @@ Conversão segura de tipos: Evita TypeError ao trabalhar com listas e mapas vind
 Formatação regional (BRL): Melhora a experiência do usuário brasileiro com datas e valores no formato local.
 
 Otimização de chamadas: Uso de CancelToken do Dio para evitar requisições desnecessárias e minimizar consumo de rede.
+
 
 ## UX e Apresentação
 
